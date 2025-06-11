@@ -8,9 +8,9 @@ from utilities.geometry import RuneLiteObject
 from utilities.img_search import BOT_IMAGES
 
 
-class OSRSTemplate(OSRSBot):
+class IzyChopper(OSRSBot):
     def __init__(self):
-        bot_title = "Power Chopper"
+        bot_title = "izy chopper"
         description = (
             "Chop trees, get a full inventory of logs, drop them, then repeat."
         )

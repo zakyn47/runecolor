@@ -633,10 +633,10 @@ if __name__ == "__main__":
     # Follow this example to test without the GUI. Press Left-Ctrl to stop.
     run_without_gui = False
     if run_without_gui:
-        from model.osrs.template import OSRSTemplate
+        from model.osrs.izy_chopper import IzyChopper
 
         app = App(test=True)
-        app.test(OSRSTemplate())
+        app.test(IzyChopper())
 
     app = App()
     app.start()
