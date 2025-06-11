@@ -13,6 +13,7 @@ src/images/bot/scraper/*
 !src/images/bot/scraper/.gitkeep
 src/settings.pickle
 src/gi_cache.json
+bot_accounts.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
