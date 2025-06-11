@@ -1283,7 +1283,7 @@ class RuneLiteBot(Bot, metaclass=ABCMeta):
                 offsetBoundaryX=40,
                 tween=pytweening.easeInOutQuad,
             )
-            pag.keydown("shift", _pause=False)
+            pag.keyDown("shift", _pause=False)
             self.mouse.click()
         pag.keyUp("shift", _pause=False)
 
