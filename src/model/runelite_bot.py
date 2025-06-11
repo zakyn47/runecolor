@@ -1229,8 +1229,7 @@ class RuneLiteBot(Bot, metaclass=ABCMeta):
     def drop_items(self, slots: List[int], verbose: bool = True) -> None:
         """Left-click one or more inventory slots to drop items.
 
-        This function relies on the Custom Left Click plug-in in RuneLite being
-        configured correctly.
+        This function relies on the shift-click drop ingame settings being enabled.
 
         Args:
             slots (List[int]): The list of inventory slot indices corresponding to
@@ -1249,13 +1248,16 @@ class RuneLiteBot(Bot, metaclass=ABCMeta):
                 offsetBoundaryX=40,
                 tween=pytweening.easeOutBack,
             )
+            pag.keyDown("shift")  # Hold shift to drop.
             self.mouse.click()
+        pag.keyUp("shift")  # Release shift when dropped.
 
     def drop_all_items(self, skip_rows: int = 0, skip_slots: List[int] = None) -> None:
-        """Individually left-click all items in the inventory to drop them.
+        """Individually left-click drop all items in the inventory to drop them.
 
-        Note that this function requires the Custom Left Click Drop RuneLite plug-in be
-        configured correctly for the items in our character's inventory we want to drop.
+        This function requires the shift-click drop ingame setting to be
+        enabled. It will skip the first `skip_rows` rows of the inventory, and it will
+        not left-click the slots specified in `skip_slots`.
 
         Args:
             skip_rows (int): The number of rows to skip not drop, 0 corresponding to
@@ -1281,7 +1283,9 @@ class RuneLiteBot(Bot, metaclass=ABCMeta):
                 offsetBoundaryX=40,
                 tween=pytweening.easeInOutQuad,
             )
+            pag.keyDown("shift")
             self.mouse.click()
+        pag.keyUp("shift")
 
     # --- General Utilities ---
     def sleep_while_not_idle(self) -> None:
