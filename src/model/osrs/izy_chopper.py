@@ -97,8 +97,8 @@ class IzyChopper(OSRSBot):
         start_time = time.time()
         end_time = int(self.run_time) * 60  # Measured in seconds.
         while time.time() - start_time < end_time:
-            #if self.take_breaks:
-            #    self.potentially_take_a_break()
+            if self.take_breaks:
+                self.potentially_take_a_break()
             if self.is_inv_full():
                 self.drop_all_items()
             self.mouse_to_nearby_tree()
