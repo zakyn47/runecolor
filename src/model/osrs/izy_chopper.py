@@ -12,12 +12,15 @@ class IzyChopper(OSRSBot):
     def __init__(self):
         bot_title = "izy chopper"
         description = (
-            "Chop trees, get a full inventory of logs, drop them, then repeat."
+        """click nearest cyan-tagged object, then wait for time specified in click_interval, then click it again.
+        \n\n
+        Bot designed for early game skilling, such as woodcutting, fishing, mining or combat @ goblins"""
         )
         super().__init__(bot_title=bot_title, description=description)
         self.run_time = 60 * 10  # Measured in minutes (default 10 hours).
         self.take_breaks = False
         self.break_max = 15  # Measured in seconds.
+        self.click_interval = 5  # Measured in seconds.
         self.options_set = True  # If True, we use the above defaults.
         self.relog_time = rd.biased_trunc_norm_samp(
             18000, 21000
@@ -37,6 +40,7 @@ class IzyChopper(OSRSBot):
         self.options_builder.add_checkbox_option(
             "take_breaks", "Take short breaks?", [" "]
         )
+        self.options_builder.add_slider_option("click_interval", "Click interval (secs)?", 1, 20)
 
     def save_options(self, options: dict) -> None:
         """Load options into the bot object.
@@ -53,6 +57,12 @@ class IzyChopper(OSRSBot):
                 self.run_time = int(options[option])
             elif option == "take_breaks":
                 self.take_breaks = options[option] != []
+            elif option == "click_interval":
+                self.click_interval = int(options[option])
+                if self.click_interval < 1:
+                    self.log_msg("Click interval must be at least 1 second.", overwrite=True)
+                    self.options_set = False
+                    return
             else:
                 self.log_msg(f"Unknown option: {option}")
                 self.options_set = False
@@ -94,7 +104,7 @@ class IzyChopper(OSRSBot):
             self.mouse_to_nearby_tree()
             self.mouse.click()
             if self.is_active:
-                time.sleep(10)
+                time.sleep(self.click_interval)
             self.update_progress((time.time() - start_time) / end_time)
             self.logout_if_greater_than(dt=self.relog_time, start=start_time)
         self.update_progress(1)
