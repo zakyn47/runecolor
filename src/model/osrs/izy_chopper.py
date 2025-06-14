@@ -21,6 +21,7 @@ class IzyChopper(OSRSBot):
         self.take_breaks = False
         self.break_max = 15  # Measured in seconds.
         self.click_interval = 5  # Measured in seconds.
+        self.skip_first_row = False  # If True, we skip the first row when dropping logs.
         self.options_set = True  # If True, we use the above defaults.
         self.relog_time = rd.biased_trunc_norm_samp(
             18000, 21000
@@ -41,6 +42,7 @@ class IzyChopper(OSRSBot):
             "take_breaks", "Take short breaks?", [" "]
         )
         self.options_builder.add_slider_option("click_interval", "Click interval (secs)?", 1, 20)
+        self.options_builder.add_checkbox_option("skip_first_row", "Skip first row while dropping?", [" "])
 
     def save_options(self, options: dict) -> None:
         """Load options into the bot object.
@@ -63,6 +65,8 @@ class IzyChopper(OSRSBot):
                     self.log_msg("Click interval must be at least 1 second.", overwrite=True)
                     self.options_set = False
                     return
+            elif option == "skip_first_row":
+                self.skip_first_row = options[option] != []
             else:
                 self.log_msg(f"Unknown option: {option}")
                 self.options_set = False
@@ -100,7 +104,10 @@ class IzyChopper(OSRSBot):
             if self.take_breaks:
                 self.potentially_take_a_break()
             if self.is_inv_full():
-                self.drop_all_items()
+                if self.skip_first_row:
+                    self.drop_all_items(skip_slots=[0, 1, 2, 3])
+                else:
+                    self.drop_all_items()
             self.mouse_to_nearby_tree()
             self.mouse.click()
             if self.is_active:
@@ -202,43 +209,4 @@ class IzyChopper(OSRSBot):
             prob_second_closest = rd.trunc_norm_samp(0.50, 0.60)
             if rd.random_chance(prob_second_closest):
                 return self.mouse_to_nearby_tree(second_closest=True)
-        return False
-
-    def get_log_slots(self) -> List[int]:
-        """Get inventory slots filled with logs of any type.
-
-        Returns:
-            List[int]: A list of inventory slots (0 to 27) filled with logs of any type.
-        """
-        sprite_folder = BOT_IMAGES / "power_chopper"
-        logs_sprites = [
-            sprite.name
-            for sprite in sprite_folder.iterdir()
-            if sprite.is_file() and sprite.name.lower().endswith("logs.png")
-        ]
-        log_slots = []
-        for sprite in logs_sprites:
-            log_slots += self.get_inv_item_slots(png=sprite, folder=sprite_folder)
-        return log_slots
-
-    def drop_all_logs(self) -> bool:
-        """Drop all logs from our character's inventory.
-
-        This function relies on the Left Click Drop RuneLite plug-in being configured
-        correctly for the corresponding variety of logs we're chopping.
-
-        Returns:
-            bool: True if the logs were successfully dropped, False otherwise.
-        """
-        log_slots = self.get_log_slots()
-        traversal = self.get_inv_drop_traversal_path()
-        log_slots = [slot for slot in traversal if slot in log_slots]
-        _s = "s" if len(log_slots) > 1 else ""
-        self.log_msg(f"Dropping {len(log_slots)} log{_s}...")
-        if log_slots:
-            self.drop_items(slots=log_slots)
-            self.logs_dropped += len(log_slots)
-            self.log_msg(f"Dropped {self.logs_dropped} log{_s} so far.", overwrite=True)
-            return True
-        self.log_msg("Failed to drop logs.")
         return False
