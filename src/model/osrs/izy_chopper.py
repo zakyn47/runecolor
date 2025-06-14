@@ -17,7 +17,7 @@ class IzyChopper(OSRSBot):
         Bot designed for early game skilling, such as woodcutting, fishing, mining or combat @ goblins"""
         )
         super().__init__(bot_title=bot_title, description=description)
-        self.run_time = 60 * 10  # Measured in minutes (default 10 hours).
+        self.run_time = 60 * 10  # Measured in minutes
         self.take_breaks = False
         self.break_max = 15  # Measured in seconds.
         self.click_interval = 5  # Measured in seconds.
@@ -27,11 +27,10 @@ class IzyChopper(OSRSBot):
             18000, 21000
         )  # Secs before relogging.
 
-        self.mark_color = self.cp.hsv.CYAN_MARK  # Color of the marked trees.
+        self.mark_color = self.cp.hsv.CYAN_MARK  # Color of the marked objects
         self.logs_dropped = 0  # Number of logs dropped.
         self.failed_searches = 0  # Number of times we failed to find another tree.
         self.num_considerations = 0  # Num of times we considered switching targets.
-        self.woodcut_keywords = ["tree", "Chop", "Tree", "Chop down"]
 
     def create_options(self) -> None:
         """Add bot options. See `utilities.options_builder` for more."""
@@ -42,7 +41,7 @@ class IzyChopper(OSRSBot):
             "take_breaks", "Take short breaks?", [" "]
         )
         self.options_builder.add_slider_option("click_interval", "Click interval (secs)?", 1, 20)
-        self.options_builder.add_checkbox_option("skip_first_row", "Skip first row while dropping?", [" "])
+        self.options_builder.add_checkbox_option("skip_first_row", "Skip dropping first inventory row?", [" "])
 
     def save_options(self, options: dict) -> None:
         """Load options into the bot object.
@@ -75,26 +74,14 @@ class IzyChopper(OSRSBot):
         self.log_msg(f"[RUN TIME] {self.run_time} MIN", overwrite=True)
         break_time_str = f"(MAX {self.break_max}s)" if self.take_breaks else ""
         self.log_msg(f"  [BREAKS] {str(self.take_breaks).upper()} {break_time_str}")
+        self.log_msg(f"[CLICK INTERVAL] {self.click_interval} SECONDS")
+        self.log_msg(f"[SKIP FIRST ROW] {str(self.skip_first_row).upper()}")
         self.options_set = True
         self.log_msg("Options set successfully.")
 
     def main_loop(self):
-        """Chop marked trees, gather logs, drop them upon full inventory, and repeat.
-
-        Run the main game loop.
-            1. Travel to a marked tree and chop it.
-            2. Continue the chop the tree, gathering logs, until it disappears.
-            3. Repeat steps 1 and 2 until our inventory is full.
-            4. Drop all logs in our inventory.
-
-        For this to work as intended:
-            1. Our character must begin next to a grove of color-marked trees. The
-                trees must be marked as a specific color (e.g. `self.cp.hsv.CYAN_MARK`)
-                as defined in `utilities.api.colors_hsv`. Objects are intended to be
-                marked with the Object Markers RuneLite plug-in.
-            2. Our inventory should be relatively empty.
-            3. Screen dimmers like F.lux or Night Light on Windows should be disabled
-                since our bot is highly sensitive to colors.
+        """click nearest cyan-tagged object, then wait for time specified in
+        click_interval, then click it again.
         """
         run_time_str = f"{self.run_time // 60}h {self.run_time % 60}m"
         self.log_msg(f"[START] ({run_time_str})", overwrite=True)
@@ -108,105 +95,56 @@ class IzyChopper(OSRSBot):
                     self.drop_all_items(skip_slots=[0, 1, 2, 3])
                 else:
                     self.drop_all_items()
-            self.mouse_to_nearby_tree()
+            self.mouse_to_nearby_object(second_closest=False)
             self.mouse.click()
             if self.is_active:
-                time.sleep(self.click_interval)
+                countdown = int(self.click_interval)
+                while countdown > 0:
+                    self.log_msg(f"Waiting: {countdown} seconds...", overwrite=True)
+                    time.sleep(1)
+                    countdown -= 1
+                    if countdown == 0:
+                        self.log_msg("clicking nearby object", overwrite=True)
+                        continue
             self.update_progress((time.time() - start_time) / end_time)
             self.logout_if_greater_than(dt=self.relog_time, start=start_time)
         self.update_progress(1)
         self.logout_and_stop_script("[END]")
 
     @property
-    def is_hovering_tree(self) -> bool:
-        """Whether the cursor is actively hovering over a tree.
-
-        Returns:
-            bool: True if the mouse cursor is hovering over a tree, False otherwise.
-        """
-        return self.get_mouseover_text(contains=self.woodcut_keywords)
-
-    @property
     def is_active(self) -> bool:
         """Whether our character is actively chopping wood.
 
         Returns:
-            bool: True if our character is presumed chopping wood, False otherwise.
+            bool: True if our character is doing something, False otherwise.
         """
         is_idle = self.check_idle_notifier_status("is_idle")
         stopped_moving = self.check_idle_notifier_status("stopped_moving")
         non_active_statuses = [is_idle, stopped_moving]
         return all(not status for status in non_active_statuses)
 
-    @property
-    def is_harvesting(self) -> bool:
-        """Whether we are chopping, gathering, or sitting with a full inventory.
-
-        Returns:
-            bool: True if we are chopping, gathering, or have a full inventory, False
-                otherwise.
-        """
-        texts_to_match = {
-            # You swing your axe at the tree.
-            "start_chop": r"^You\w*swing\w*tree$",
-            # You get some <tree_type> logs.
-            "gather_logs": r"^Yougetsome\w*logs$",
-            # Your inventory is too full to hold any more <tree_type> logs.
-            "inv_full": r"^You\w*inventory\w*full\w*logs$",
-        }
-        chat_history = self.get_chat_history()
-        first_line = chat_history[0]
-        for label, pattern in texts_to_match.items():
-            if re.search(pattern, first_line):
-                msg = "Resumed harvesting."
-                if label == "start_chop":
-                    self.log_msg(f"{msg} Axe confirmed swinging.", overwrite=True)
-                elif label == "gather_logs":
-                    self.log_msg(f"{msg} Confirmed gathering logs.", overwrite=True)
-                elif label == "inv_full":
-                    self.log_msg(f"{msg} Inventory is confirmed full.", overwrite=True)
-                return True
-        return False
-
-    def mouse_to_nearby_tree(self, second_closest: bool = False) -> bool:
+    def mouse_to_nearby_object(self, second_closest: bool = False) -> bool:
         """Move the cursor to the nearest tree (or second-nearest).
 
         Note that if `second_closest` is True and a second-closest tree does not exist,
         this method will return False.
 
         Args:
-            second_closest (bool, optional): If True, will move the cursor to the tree
-                second-nearest to our character's location (if such a tree exists),
+            second_closest (bool, optional): If True, will move the cursor to the object
+                second-nearest to our character's location (if such exists),
                 False otherwise.
 
         Returns:
-            bool: True if the mouse moved to a nearby tree, False otherwise.
+            bool: True if the mouse moved to a nearby object, False otherwise.
         """
-        if trees := self.find_colors(self.win.game_view, self.mark_color):
-            if second_closest and len(trees) < 1:
+        if objects := self.find_colors(self.win.game_view, self.mark_color):
+            if second_closest and len(objects) < 1:
                 return False
-            trees = sorted(trees, key=RuneLiteObject.dist_from_rect_center)
-            chosen_tree = trees[1] if second_closest else trees[0]
-            self.mouse.move_to(chosen_tree.random_point())
-            if self.is_hovering_tree:
-                order = "second-closest" if second_closest else "closest"
-                self.log_msg(f"Moused to {order} tree.", overwrite=True)
-                return True
-        self.log_msg("Could not detect new trees.", overwrite=True)
-        return False
-
-    def potentially_mouse_to_second_closest_tree(self, prob_move_cursor: float) -> bool:
-        """Potentially move the mouse to the second-closest tree next to us.
-
-        Args:
-            prob_move_cursor (float): The probability of moving the tree second-closest
-                to our current location.
-
-        Returns:
-            bool: True if we moused to the second-closest tree, False otherwise.
-        """
-        if rd.random_chance(prob_move_cursor):
-            prob_second_closest = rd.trunc_norm_samp(0.50, 0.60)
-            if rd.random_chance(prob_second_closest):
-                return self.mouse_to_nearby_tree(second_closest=True)
+            objects = sorted(objects, key=RuneLiteObject.dist_from_rect_center)
+            chosen_object = objects[1] if second_closest else objects[0]
+            self.mouse.move_to(chosen_object.random_point(),mouse_speed="fastest")
+            order = "second-closest" if second_closest else "closest"
+            self.log_msg(f"Moused to {order} object.")
+            return True
+        self.log_msg("Could not detect new objects.")
         return False
