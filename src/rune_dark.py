@@ -265,7 +265,7 @@ class App(ctk.CTk):
 
     def build_ui(self) -> None:
         """Build RuneDark's graphic user interface."""
-        self.title("RuneDark")
+        self.title("Runecolor")
         self.views: dict[str, ctk.CTkFrame] = (
             {}
         )  # All views as CTkFrame objects, keyed by game title.
