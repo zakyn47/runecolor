@@ -10,7 +10,7 @@ from utilities.img_search import BOT_IMAGES
 
 class OSRSPowerChopper(OSRSBot):
     def __init__(self):
-        bot_title = "Power Chopper"
+        bot_title = "not ready"
         description = (
             "Chop trees, get a full inventory of logs, drop them, then repeat."
         )

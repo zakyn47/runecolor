@@ -11,7 +11,7 @@ from utilities.walker import Walker, WalkPath
 
 class OSRSYewBanker(OSRSPowerChopper, OSRSBot):
     def __init__(self) -> None:
-        bot_title = "Yew Banker"
+        bot_title = "not ready"
         description = (
             "Chop the yew trees directly behind Varrock castle, gather a full inventory"
             " of logs, travel to the GE, bank the logs, then repeat."

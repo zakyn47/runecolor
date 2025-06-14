@@ -6,7 +6,7 @@ from utilities.walker import Walker
 class OSRSWanderer(OSRSBot):
     def __init__(self):
         super().__init__(
-            bot_title="Wanderer",
+            bot_title="not ready",
             description=(
                 "Given a path, global coordinates of a destination, or the"
                 " name of a well-known destination, walk there."

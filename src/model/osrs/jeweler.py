@@ -9,7 +9,7 @@ from model.osrs.osrs_bot import OSRSBot
 
 class OSRSJeweler(OSRSBot):
     def __init__(self) -> None:
-        bot_title = "Jeweler"
+        bot_title = "not ready"
         description = (
             "Withdraw metal bars and a choice of gem from the Edgeville bank, walk to"
             " the nearby furnace, craft jewlery, deposit the products back at the"

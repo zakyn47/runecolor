@@ -12,7 +12,7 @@ from utilities.mappings import item_ids as iid
 
 class OSRSWineMaker(OSRSBot):
     def __init__(self):
-        bot_title = "Wine Maker"
+        bot_title = "not ready"
         description = (
             "Withdraw grapes and jugs of water from a marked bank, make jugs of wine,"
             " deposit the products back at the bank, and then repeat."
